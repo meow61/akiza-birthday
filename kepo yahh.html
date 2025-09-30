@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ice Dragon Birthday 🎉</title>
+<style>
+  body { 
+    margin:0; padding:0; background:#000; color:#fff; 
+    font-family:"Courier New", monospace; overflow:hidden; 
+    transition: background 0.5s ease, color 0.5s ease; 
+    height: 100vh;
+  }
+  #scene-container {
+    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    width:80%; max-width:800px; text-align:center;
+  }
+  #speaker { font-weight:bold; font-size:22px; color:#6cf; margin-bottom:10px; }
+  #text { font-size:20px; min-height:100px; line-height:1.6; white-space:pre-line; }
+  #npc-image { max-width:300px; max-height:300px; margin:20px auto; display:none; border-radius:12px; box-shadow:0 0 15px rgba(0,0,0,0.7); }
+  #next-btn { padding:10px 20px; font-size:16px; border:none; border-radius:8px; background:#444; color:#fff; cursor:pointer; }
+  #next-btn:hover { background:#666; }
+  #flash { position:fixed; top:0; left:0; width:100%; height:100%; background:white; opacity:0; pointer-events:none; z-index:50; transition:opacity 0.2s; }
+  canvas#confetti { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:100; }
+  iframe { display:none; }
+</style>
+</head>
+<body>
+<div id="scene-container">
+  <div id="speaker"></div>
+  <div id="text"></div>
+  <img id="npc-image" src="" alt="NPC">
+  <button id="next-btn">Lanjut</button>
+</div>
+<div id="flash"></div>
+<canvas id="confetti"></canvas>
+
+<!-- BGM Utama (mulai saat flash confetti) -->
+<iframe id="bgm-main" width="0" height="0" 
+        src="https://www.youtube.com/embed/G1tIunm5eWA?loop=1&playlist=G1tIunm5eWA" 
+        frameborder="0" allow="autoplay"></iframe>
+
+<script>
+// --- SCENES ---
+const scenes = [
+  { type:"title", text:"Ulang Tahun ke-3456 Sang Archduke Naga" },
+  { type:"title", text:"Hari ini, Nagatsu Akiza sang Archduke of Eirden merayakan hari lahirnya yang ke-3456 sebelum pesta ini dimulai mari kita mengikuti perjalanan panjang yang menantinya..." },
+  { type:"narrator", text:"Cahaya biru kristal menembus jendela istana, memantul di dinding es. Hening menusuk." },
+  { type:"dialogue", speaker:"akiza", text:"Huh… sepi sekali. Apakah ini hanya mimpi?" },
+  { type:"narrator", text:"Langkahnya bergema di aula kosong. Angin berdesir, membawa bisikan lirih.", bg:"https://i.imgur.com/czxSrN6.jpeg", textColor:"black" },
+  { type:"dialogue", speaker:"???", text:"Berhati-hati lah… Archduke…" },
+  { type:"narrator", text:"Dia melangkah keluar. Hutan es membentang; dedaunan membeku seperti berlian. Angin semakin dingin.", bg:"https://i.imgur.com/axnGFH7.jpeg", textColor:"black" },
+  { type:"dialogue", speaker:"Akiza", text:"Tempat ini terasa indah sekaligus menakutkan." },
+  { type:"narrator", text:"Dia pun menyeberangi danau beku bayangan samar terlihat di balik kabut" },
+  { type:"dialogue", speaker:"Akiza", text:"Siapa di sana? ... Mungkin hanya imajinasi ku" },
+  { type:"narrator", text:"Di puncak gunung kristal, panorama luas membentang. Saat kembali ke Eirden Manor segala yang dikenalnya hancur." },
+  { type:"dialogue", speaker:"Akiza", text:"A-apa yang… sudah terjadi?!" },
+  { type:"narrator", text:"Di antara pecahan es, sebuah surat berkilau terang" },
+  { type:"narrator", text:"Isi Surat itu adalah Wahai Sang Archduke Nagatsu Akiza, kami telah menculik sesorang yang penting bagi mu kini dia ada di tangan kami jika kau ingin menyelamatkannya, datanglah ke tempat yang telah kami tentukan gelap akan menelanimu bila kau ragu. Kami menunggumu…", textColor:"white" },
+  { type:"narrator", text:"Sang Archduke pun mulai menapaki jalan berkabut bayangan muncul satu per satu.", bg:"https://i.imgur.com/O3YbqUM.jpeg" },
+  { type:"dialogue", speaker:"ayaazela", text:"Akhirnya datang juga udah kucium aroma keberanianmu dari jauh", image:"https://i.imgur.com/yoquCYw.jpeg" },
+  { type:"dialogue", speaker:"riyani", text:"Keberanian? Huh… kupikir itu hanya nekat belaka", image:"https://i.imgur.com/eNMR13G.png" },
+  { type:"dialogue", speaker:"nanaa", text:"Oh, betapa indahnya tragedi ini… seorang archduke mencari sesuatu yang hilang di ujung malam beku ini", image:"https://i.imgur.com/299kjgH.png" },
+  { type:"dialogue", speaker:"willi", text:"Hati-hati ya! Bisa jadi sebelum kamu melangkah kesini kau sudah melangkah ke jebakan maut hahaha!", image:"https://i.imgur.com/OwyFAgA.jpeg" },
+  { type:"dialogue", speaker:"z", text:"Semua ini hanyalah bayangan kadang apa yang kau lihat bukanlah apa yang ada", image:"https://i.imgur.com/zeFJ9Qn.jpeg" },
+  { type:"dialogue", speaker:"Akiza", text:"Apa maksudmu itu?" },
+  { type:"dialogue", speaker:"z", text:"Siapa yang tahu? Mungkin angin lebih paham daripada aku" },
+  { type:"dialogue", speaker:"koharu", text:"Cukup atas basa basi ini jika kau ingin menyelamatkan dia buktikan bahwa dirimu bisa mengalahkan aku", image:"https://i.imgur.com/xR8rs63.png" },
+  { type:"narrator", text:"Suasana makin memanas Player bersiap" },
+  { type:"narrator", text:"Akiza dan koharu saling berhadapan aura energi pun mulai tidak stabil" },
+  { type:"dialogue", speaker:"Akiza", text:"Apa?! Apa yang terjadi?!", effect:"confetti" },
+  { type:"dialogue", speaker:"kak gepii", text:"Selamat datang, Archduke of Eirden Nagatsu akiza kau sudah melewati perjalanan yang sangat panjang ini dan sekarang inilah tujuannya kami sebenarnya", image:"https://i.imgur.com/LBCBnsA.png" },
+  { type:"narrator", text:"Dragoners serempak berteriak: SELAMAT ULANG TAHUN, SANG ARCHDUKE NAGATSU AKIZA ATAS KE-3456!" },
+  { type:"narrator", text:"Hadiah nya pun diberikan dan terlihat gambar archduke of Eiren yang sedang memakai mahkota berhias permata biru dengan orbs yang mengsimbolkan harapan & kekuatan beserta pedang kristal yang berada di punggungnya .", image:"https://i.imgur.com/ivVPs8i.jpeg" },
+  { type:"dialogue", speaker:"Akiza", text:"Terima kasih Kalian benar-benar membuatku terkejut" },
+  { type:"narrator", text:"Suasana hangat kini memenuhi ruangan cahaya kristal berkilau lembut tawa,kebersamaan, dan pesta ulang tahun yang tak terlupakan dimulai" },
+  { type:"credit", text:"Script & Program: bersama aku sendiri meow" },
+  { type:"credit", text:"Special Thanks for Kak Gepi (alias M-chan) & yang lainnyaa" },
+  { type:"credit", text:"Drawing scene gift by SoraCute" },
+  { type:"credit", text:"THANK YOU FOR PLAYING – THE END (mungkin ada sedikit pesan yang bisa saya sampaikan untuk kali ini saya mencoba sks yaitu sistem kebut semalam dalam pembuatan web ini dikarenakan sebagai tanda terimakasih kepada pak akiza dan terimaksih juga kepada kak gepi dan kawan kawan lainnya yang sudah ikut berpatisipasi dalam projek ini bagi yang gak dapat masuk dalam projek ini mohon maaf tapi kalian bisa menggangap diri kalian sebagai dragoners atau mungkin bakal diganti yah mungkin itu aja yang bisa saya sampaikan dan juga maaf kalau misalnya belum bagus terus scriptnya agak ngaco maklumin aku masih pemula soalnya)" }
+];
+
+// --- VARIABLES ---
+let currentScene = 0;
+const textEl = document.getElementById("text");
+const speakerEl = document.getElementById("speaker");
+const npcImage = document.getElementById("npc-image");
+const nextBtn = document.getElementById("next-btn");
+const flash = document.getElementById("flash");
+const canvas = document.getElementById('confetti');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let confettiParticles = [];
+let confettiTriggered = false;
+
+function random(min,max){return Math.random()*(max-min)+min;}
+function createConfetti(){
+  confettiParticles=[];
+  for(let i=0;i<200;i++){
+    confettiParticles.push({ x: random(0,canvas.width), y: random(-canvas.height,0), r: random(2,6), d: random(1,5), color: "hsl("+random(0,360)+",100%,50%)", tilt: random(-10,10) });
+  }
+}
+function drawConfetti(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  confettiParticles.forEach(p=>{
+    ctx.beginPath();
+    ctx.lineWidth=p.r;
+    ctx.strokeStyle=p.color;
+    ctx.moveTo(p.x+p.tilt+p.r/2,p.y);
+    ctx.lineTo(p.x+p.tilt,p.y+p.r);
+    ctx.stroke();
+  });
+  confettiParticles.forEach(p=>{
+    p.y+=Math.cos(0.01)+1+p.d/2;
+    p.x+=Math.sin(0.01);
+    if(p.y>canvas.height){p.y=random(-20,-10); p.x=random(0,canvas.width);}
+  });
+  requestAnimationFrame(drawConfetti);
+}
+function startConfetti(){ createConfetti(); drawConfetti(); }
+function triggerFlashConfetti(){ 
+  if(!confettiTriggered){ 
+    confettiTriggered=true; 
+    flash.style.opacity=1; 
+    setTimeout(()=>{flash.style.opacity=0;},200); 
+    startConfetti(); 
+    // mulai BGM utama saat flash
+    document.getElementById("bgm-main").src += "&autoplay=1";
+  } 
+}
+
+function typeWriter(text,i,callback){ 
+  if(i<text.length){ 
+    textEl.innerHTML=text.substring(0,i+1); 
+    setTimeout(()=>typeWriter(text,i+1,callback),35); 
+  } else if(callback) callback(); 
+}
+
+function showScene(scene){
+  speakerEl.textContent = scene.type==="dialogue"?scene.speaker:(scene.type==="narrator"?"Narator":"");
+  textEl.textContent="";
+  if(scene.image){ 
+    npcImage.src=scene.image; 
+    npcImage.style.display="block"; 
+  } else npcImage.style.display="none";
+
+  if(scene.bg){
+    document.body.style.backgroundImage = "url('" + scene.bg + "')";
+    document.body.style.backgroundPosition = "center";
+    document.body.style.backgroundSize = "cover";
+    document.body.style.backgroundRepeat = "no-repeat";
+    document.body.style.height = "100vh";
+  } else {
+    document.body.style.backgroundImage = "";
+    document.body.style.backgroundColor = "#000";
+  }
+
+  if(scene.textColor){
+    textEl.style.color = scene.textColor;
+  } else {
+    textEl.style.color = "#fff";
+  }
+
+  if(scene.effect==="confetti") triggerFlashConfetti();
+
+  typeWriter(scene.text,0);
+}
+
+nextBtn.addEventListener("click",()=>{ 
+  if(currentScene<scenes.length){ 
+    showScene(scenes[currentScene]); 
+    currentScene++; 
+  } else { 
+    textEl.innerHTML="Cerita selesai 🎉"; 
+    speakerEl.textContent=""; 
+    npcImage.style.display="none"; 
+    nextBtn.style.display="none"; 
+  }
+});
+
+// START
+showScene(scenes[currentScene]);
+currentScene++;
+</script>
+</body>
+</html>
